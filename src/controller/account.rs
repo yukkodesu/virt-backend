@@ -60,7 +60,7 @@ pub async fn regist_handler(
         .one(db)
         .await
     {
-        Ok(Some(v)) => return NetworkResponse::Unauthorized(String::from("User already exists")),
+        Ok(Some(_)) => return NetworkResponse::Unauthorized(String::from("User already exists")),
         _ => (),
     }
 

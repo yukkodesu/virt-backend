@@ -4,11 +4,13 @@ extern crate rocket;
 mod controller;
 mod db;
 mod middleware;
+mod virt;
 
 use controller::{account::*, virt::*};
 use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
+use virt::VirtConnect;
 use std::env;
 
 #[rocket::main]
@@ -22,10 +24,13 @@ async fn main() -> Result<(), rocket::Error> {
             panic!("{}", err);
         }
     };
+    
+    let virt_conn = VirtConnect::new();
 
     let _ = rocket::build()
         .manage(db)
-        .mount("/api", routes![login_handler, regist_handler, hello])
+        .manage(virt_conn)
+        .mount("/api", routes![login_handler, regist_handler, hello, list_all])
         .launch()
         .await?;
 

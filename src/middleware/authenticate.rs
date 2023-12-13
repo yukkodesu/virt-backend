@@ -12,8 +12,6 @@ use rocket::{
 };
 use std::env;
 
-use crate::controller::account::NetworkResponse;
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub sub: i32,
