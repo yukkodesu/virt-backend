@@ -1,4 +1,4 @@
-use rocket::State;
+use rocket::{State, response::content};
 
 use crate::{middleware::authenticate::JWT, virt::VirtConnect};
 
@@ -8,11 +8,11 @@ pub fn hello(_jwt: JWT) -> String {
 }
 
 #[get("/list-all")]
-pub fn list_all(conn: &State<VirtConnect>) -> String {
+pub fn list_all(conn: &State<VirtConnect>) -> content::RawJson<String> {
     let conn = conn as &VirtConnect;
     conn.tx.send(String::from("ListAll")).unwrap();
     if let Ok(res) = conn.rx.lock().unwrap().recv() {
-        return res;
+        return content::RawJson(res);
     }
-    String::from("Error")
+    content::RawJson(String::from("Error"))
 }
