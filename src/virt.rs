@@ -24,22 +24,7 @@ impl VirtConnect {
                 if let Ok(val) = virt_rx.recv() {
                     println!("{}", val);
                     match val.as_str() {
-                        "ListAll" => {
-                            println!("{:?}", conn.list_all_domains(0).unwrap());
-                            let t: Vec<HashMap<&str, String>> = conn
-                                .list_all_domains(0)
-                                .unwrap()
-                                .into_iter()
-                                .map(|dom| {
-                                    let mut map = HashMap::new();
-                                    map.insert("name", dom.get_name().unwrap());
-                                    map.insert("vcpu", dom.get_info().unwrap().nr_virt_cpu.to_string());
-                                    map.insert("memory", dom.get_info().unwrap().memory.to_string());
-                                    map
-                                })
-                                .collect();
-                            main_tx.send(serde_json::to_string(&t).unwrap()).unwrap();
-                        }
+                        "ListAll" => list_all(&conn, &main_tx),
                         _ => (),
                     }
                 } else {
@@ -53,4 +38,20 @@ impl VirtConnect {
             rx: Mutex::new(main_rx),
         }
     }
+}
+
+fn list_all(conn: &Connect, main_tx: &Sender<String>) {
+    let t: Vec<HashMap<&str, String>> = conn
+        .list_all_domains(0)
+        .unwrap()
+        .into_iter()
+        .map(|dom| {
+            let mut map = HashMap::new();
+            map.insert("name", dom.get_name().unwrap());
+            map.insert("vcpu", dom.get_info().unwrap().nr_virt_cpu.to_string());
+            map.insert("memory", dom.get_info().unwrap().memory.to_string());
+            map
+        })
+        .collect();
+    main_tx.send(serde_json::to_string(&t).unwrap()).unwrap();
 }
