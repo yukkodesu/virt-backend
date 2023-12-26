@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     sync::{
         mpsc::{self, Receiver, Sender, SyncSender},
         Mutex,
@@ -8,23 +7,48 @@ use std::{
 };
 use virt::connect::Connect;
 
+use self::list::*;
+
+mod list;
+
+pub struct VirtCommand {
+    cmd: String,
+    params: Vec<String>,
+}
+
+impl VirtCommand {
+    pub fn create(cmd: &str) -> Self {
+        VirtCommand {
+            cmd: cmd.to_string(),
+            params: Vec::new(),
+        }
+    }
+    pub fn create_with_params(cmd: &str, params: Vec<String>) -> Self {
+        VirtCommand {
+            cmd: cmd.to_string(),
+            params,
+        }
+    }
+}
+
 pub struct VirtConnect {
-    pub tx: SyncSender<String>,
+    pub tx: SyncSender<VirtCommand>,
     pub rx: Mutex<Receiver<String>>,
 }
 
 impl VirtConnect {
     pub fn new() -> Self {
-        let (virt_tx, virt_rx): (SyncSender<String>, Receiver<String>) = mpsc::sync_channel(2);
+        let (virt_tx, virt_rx): (SyncSender<VirtCommand>, Receiver<VirtCommand>) =
+            mpsc::sync_channel(2);
         let (main_tx, main_rx): (Sender<String>, Receiver<String>) = mpsc::channel();
         thread::spawn(move || {
             let mut conn = Connect::open("qemu:///session").expect("connection err");
 
             loop {
-                if let Ok(val) = virt_rx.recv() {
-                    println!("{}", val);
-                    match val.as_str() {
+                if let Ok(VirtCommand { cmd, params }) = virt_rx.recv() {
+                    match cmd.as_str() {
                         "ListAll" => list_all(&conn, &main_tx),
+                        "ListSnapshot" => list_snapshot(&conn, &main_tx, &params),
                         _ => (),
                     }
                 } else {
@@ -38,20 +62,4 @@ impl VirtConnect {
             rx: Mutex::new(main_rx),
         }
     }
-}
-
-fn list_all(conn: &Connect, main_tx: &Sender<String>) {
-    let t: Vec<HashMap<&str, String>> = conn
-        .list_all_domains(0)
-        .unwrap()
-        .into_iter()
-        .map(|dom| {
-            let mut map = HashMap::new();
-            map.insert("name", dom.get_name().unwrap());
-            map.insert("vcpu", dom.get_info().unwrap().nr_virt_cpu.to_string());
-            map.insert("memory", dom.get_info().unwrap().memory.to_string());
-            map
-        })
-        .collect();
-    main_tx.send(serde_json::to_string(&t).unwrap()).unwrap();
 }

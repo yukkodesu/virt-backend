@@ -1,6 +1,10 @@
-use rocket::{State, response::content};
+use rocket::{http::Status, response::content, State, serde::json::Json};
+use serde::{Deserialize, Serialize};
 
-use crate::{middleware::authenticate::JWT, virt::VirtConnect};
+use crate::{
+    middleware::authenticate::JWT,
+    virt::{VirtCommand, VirtConnect},
+};
 
 #[get("/hello")]
 pub fn hello(_jwt: JWT) -> String {
@@ -8,11 +12,34 @@ pub fn hello(_jwt: JWT) -> String {
 }
 
 #[get("/list-all")]
-pub fn list_all(conn: &State<VirtConnect>) -> content::RawJson<String> {
+pub fn list_all(_jwt: JWT, conn: &State<VirtConnect>) -> (Status, content::RawJson<String>) {
     let conn = conn as &VirtConnect;
-    conn.tx.send(String::from("ListAll")).unwrap();
+    conn.tx
+        .send(VirtCommand::create("ListAll"))
+        .unwrap();
     if let Ok(res) = conn.rx.lock().unwrap().recv() {
-        return content::RawJson(res);
+        return (Status::Ok, content::RawJson(res));
     }
-    content::RawJson(String::from("Error"))
+    (
+        Status::InternalServerError,
+        content::RawJson(String::from("Error listing all domains")),
+    )
+}
+
+#[post("/list-snapshot",format = "application/json", data = "<dom_names>")]
+pub fn list_snapshot(
+    _jwt: JWT,
+    conn: &State<VirtConnect>,
+    dom_names: Json<Vec<String>>
+) -> (Status, content::RawJson<String>) {
+    let conn = conn as &VirtConnect;
+    let dom_names = dom_names.0.into_iter().collect();
+    conn.tx.send(VirtCommand::create_with_params("ListSnapshot", dom_names)).unwrap();
+    if let Ok(res) = conn.rx.lock().unwrap().recv() {
+        return (Status::Ok, content::RawJson(res));
+    }
+    (
+        Status::InternalServerError,
+        content::RawJson(String::from("Error listing all domains")),
+    )
 }
