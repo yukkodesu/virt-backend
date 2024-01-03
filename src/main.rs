@@ -10,6 +10,7 @@ use controller::{account::*, virt::*};
 use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
+use middleware::cors::CORS;
 use std::env;
 use virt::VirtConnect;
 
@@ -30,6 +31,7 @@ async fn main() -> Result<(), rocket::Error> {
     let _ = rocket::build()
         .manage(db)
         .manage(virt_conn)
+        .attach(CORS)
         .mount(
             "/api",
             routes![
