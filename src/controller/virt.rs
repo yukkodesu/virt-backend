@@ -1,5 +1,4 @@
 use rocket::{http::Status, response::content, State, serde::json::Json};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     middleware::authenticate::JWT,
