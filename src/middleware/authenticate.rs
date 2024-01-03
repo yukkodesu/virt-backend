@@ -62,12 +62,12 @@ impl<'r> FromRequest<'r> for JWT {
     type Error = String;
 
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
-        match req.headers().get_one("authorization") {
+        match req.cookies().get("authorization") {
             None => Outcome::Error((
                 Status::Unauthorized,
                 String::from("Error validating JWT token - No token provided"),
             )),
-            Some(token) => match decode_jwt(token) {
+            Some(token) => match decode_jwt(token.value()) {
                 Ok(claims) => Outcome::Success(JWT { claims }),
                 Err(e) => Outcome::Error((
                     Status::Unauthorized,

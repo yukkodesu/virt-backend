@@ -1,6 +1,7 @@
 use crate::db::entity::{prelude::*, *};
 use crate::middleware::authenticate::create_jwt;
 use bcrypt::{hash, verify, DEFAULT_COST};
+use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
@@ -28,6 +29,7 @@ pub enum NetworkResponse {
 pub async fn login_handler(
     req_user: Json<UserJson>,
     db: &State<DatabaseConnection>,
+    cookies: &CookieJar<'_>
 ) -> NetworkResponse {
     let db = db as &DatabaseConnection;
     let user_db = match User::find()
@@ -44,7 +46,7 @@ pub async fn login_handler(
         return NetworkResponse::Unauthorized(String::from("Password or Username is wrong"));
     }
     let token = create_jwt(user_db.id).expect("create jwt error");
-    
+    cookies.add(Cookie::new("authorization", token.clone()));
     NetworkResponse::Success(token)
 }
 
