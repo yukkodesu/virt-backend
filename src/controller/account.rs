@@ -5,6 +5,7 @@ use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
+use rocket::time::{OffsetDateTime, Duration};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, ActiveValue};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -46,7 +47,11 @@ pub async fn login_handler(
         return NetworkResponse::Unauthorized(String::from("Password or Username is wrong"));
     }
     let token = create_jwt(user_db.id).expect("create jwt error");
-    cookies.add(Cookie::new("authorization", token.clone()));
+
+    let expire_time = OffsetDateTime::now_utc() + Duration::days(1);
+    let mut token_cookie = Cookie::new("authorization", token.clone());
+    token_cookie.set_expires(expire_time);
+    cookies.add(token_cookie);
     NetworkResponse::Success(token)
 }
 

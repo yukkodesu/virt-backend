@@ -31,7 +31,6 @@ async fn main() -> Result<(), rocket::Error> {
     let _ = rocket::build()
         .manage(db)
         .manage(virt_conn)
-        .attach(CORS)
         .mount(
             "/api",
             routes![
@@ -39,9 +38,11 @@ async fn main() -> Result<(), rocket::Error> {
                 regist_handler,
                 hello,
                 list_all,
-                list_snapshot
+                list_snapshot,
+                list_snapshot_tree
             ],
         )
+        .attach(CORS)
         .launch()
         .await?;
 

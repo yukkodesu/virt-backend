@@ -19,10 +19,20 @@ pub fn list_all(conn: &Connect, main_tx: &Sender<String>) {
 }
 
 pub fn list_snapshot(conn: &Connect, main_tx: &Sender<String>, params: &Vec<String>) {
+    // create json_obj like
+    // {
+    //     "domain_name":[
+    //         {
+    //             "name": "snapshot_name",
+    //             "description": "",
+    //             "state": "",
+    //             "creationTime": "",
+    //         }
+    //     ]
+    // }
     let t: HashMap<&String, Vec<HashMap<&str, String>>> = params
         .into_iter()
         .map(|dom_name| {
-            // let mut map = HashMap::new();
             match Domain::lookup_by_name(conn, dom_name) {
                 Err(e) => {
                     let mut obj = HashMap::new();
@@ -37,12 +47,10 @@ pub fn list_snapshot(conn: &Connect, main_tx: &Sender<String>, params: &Vec<Stri
                             let info_str = &it.get_xml_desc(0).unwrap();
                             let info = roxmltree::Document::parse(info_str).unwrap();
                             let get_text_by_tagname = |info: &Document, tag_name: &str| -> String {
-                                info.descendants()
-                                    .find(|it| it.has_tag_name(tag_name))
-                                    .unwrap()
-                                    .text()
-                                    .unwrap()
-                                    .to_string()
+                                match info.descendants().find(|it| it.has_tag_name(tag_name)) {
+                                    Some(it) => it.text().unwrap_or("").to_string(),
+                                    None => "".to_string(),
+                                }
                             };
                             let name = get_text_by_tagname(&info, "name");
                             let description = get_text_by_tagname(&info, "description");
@@ -61,5 +69,29 @@ pub fn list_snapshot(conn: &Connect, main_tx: &Sender<String>, params: &Vec<Stri
             }
         })
         .collect();
+    main_tx.send(serde_json::to_string(&t).unwrap()).unwrap();
+}
+
+pub fn list_snapshot_tree(conn: &Connect, main_tx: &Sender<String>, params: &Vec<String>) {
+    let dom_name = &params[0];
+    let t = match Domain::lookup_by_name(conn, dom_name) {
+        Ok(dom) => {
+            let snapshots = dom.list_all_snapshots(0).unwrap();
+            let snapshots: HashMap<String, Vec<String>> = snapshots
+                .iter()
+                .map(|it| {
+                    let childs: Vec<String> = it
+                        .list_all_children(0)
+                        .unwrap()
+                        .iter()
+                        .map(|child| child.get_name().unwrap())
+                        .collect();
+                    (it.get_name().unwrap(), childs)
+                })
+                .collect();
+            snapshots
+        }
+        Err(_) => HashMap::new(),
+    };
     main_tx.send(serde_json::to_string(&t).unwrap()).unwrap();
 }

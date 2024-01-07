@@ -49,6 +49,7 @@ impl VirtConnect {
                     match cmd.as_str() {
                         "ListAll" => list_all(&conn, &main_tx),
                         "ListSnapshot" => list_snapshot(&conn, &main_tx, &params),
+                        "ListSnapshotTree" => list_snapshot_tree(&conn, &main_tx, &params),
                         _ => (),
                     }
                 } else {
