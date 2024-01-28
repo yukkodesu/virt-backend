@@ -5,11 +5,14 @@ use std::{
     },
     thread,
 };
+use sysinfo::System;
 use virt::connect::Connect;
 
 use self::list::*;
+use self::sys::*;
 
 mod list;
+mod sys;
 
 pub struct VirtCommand {
     cmd: String,
@@ -43,13 +46,14 @@ impl VirtConnect {
         let (main_tx, main_rx): (Sender<String>, Receiver<String>) = mpsc::channel();
         thread::spawn(move || {
             let mut conn = Connect::open("qemu:///session").expect("connection err");
-
+            let mut sys = System::new();
             loop {
                 if let Ok(VirtCommand { cmd, params }) = virt_rx.recv() {
                     match cmd.as_str() {
                         "ListAll" => list_all(&conn, &main_tx),
                         "ListSnapshot" => list_snapshot(&conn, &main_tx, &params),
                         "ListSnapshotTree" => list_snapshot_tree(&conn, &main_tx, &params),
+                        "SysInfo" => get_sysinfo(&main_tx, &mut sys),
                         _ => (),
                     }
                 } else {

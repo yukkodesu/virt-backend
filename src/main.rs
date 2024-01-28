@@ -6,11 +6,12 @@ mod db;
 mod middleware;
 mod virt;
 
-use controller::{account::*, virt::*};
+use controller::{account::*, virt::*, sysinfo::get_sysinfo};
 use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
 use middleware::cors::CORS;
+use sysinfo::System;
 use std::env;
 use virt::VirtConnect;
 
@@ -39,7 +40,8 @@ async fn main() -> Result<(), rocket::Error> {
                 hello,
                 list_all,
                 list_snapshot,
-                list_snapshot_tree
+                list_snapshot_tree,
+                get_sysinfo,
             ],
         )
         .attach(CORS)
