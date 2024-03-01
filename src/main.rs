@@ -11,7 +11,6 @@ use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
 use middleware::cors::CORS;
-use sysinfo::System;
 use std::env;
 use virt::VirtConnect;
 
