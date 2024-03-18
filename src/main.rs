@@ -6,7 +6,7 @@ mod db;
 mod middleware;
 mod virt;
 
-use controller::{account::*, virt::*, sysinfo::get_sysinfo};
+use controller::{account::*, sysinfo::get_sysinfo, virt::*};
 use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
@@ -41,6 +41,7 @@ async fn main() -> Result<(), rocket::Error> {
                 list_snapshot,
                 list_snapshot_tree,
                 get_sysinfo,
+                create_snapshot,
             ],
         )
         .attach(CORS)

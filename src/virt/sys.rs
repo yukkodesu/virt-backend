@@ -9,7 +9,7 @@ pub fn get_sysinfo(main_tx: &Sender<String>, sys: &mut System) {
     let now = SystemTime::now();
     let unix_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_millis();
     t.insert("timestamp", unix_timestamp.to_string());
-    t.insert("total memory", sys.available_memory().to_string());
+    t.insert("total memory", sys.total_memory().to_string());
     t.insert("used memory", sys.used_memory().to_string());
     t.insert("total swap", sys.total_swap().to_string());
     t.insert("used swap", sys.used_swap().to_string());

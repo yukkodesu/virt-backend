@@ -13,6 +13,7 @@ use self::sys::*;
 
 mod list;
 mod sys;
+pub mod shell;
 
 pub struct VirtCommand {
     cmd: String,

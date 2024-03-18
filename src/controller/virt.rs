@@ -2,7 +2,7 @@ use rocket::{http::Status, response::content, serde::json::Json, State};
 
 use crate::{
     middleware::authenticate::JWT,
-    virt::{VirtCommand, VirtConnect},
+    virt::{VirtCommand, VirtConnect, shell},
 };
 
 #[get("/hello")]
@@ -67,4 +67,16 @@ pub fn list_snapshot_tree(
         Status::InternalServerError,
         content::RawJson(String::from("Error listing snapshot tree")),
     )
+}
+
+
+#[post("/create-snapshot", format = "application/json", data = "<configure>")]
+pub fn create_snapshot(
+    _jwt: JWT,
+    configure: Json<shell::SnapShotConfig>,
+) -> (Status, content::RawJson<String>) {
+    match shell::create_snapshot(configure.0) {
+        Ok(output) => (Status::Ok, content::RawJson(output)),
+        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string()))
+    }
 }
