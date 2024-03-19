@@ -42,6 +42,7 @@ async fn main() -> Result<(), rocket::Error> {
                 list_snapshot_tree,
                 get_sysinfo,
                 create_snapshot,
+                delete_snapshot
             ],
         )
         .attach(CORS)

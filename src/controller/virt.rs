@@ -69,13 +69,23 @@ pub fn list_snapshot_tree(
     )
 }
 
-
 #[post("/create-snapshot", format = "application/json", data = "<configure>")]
 pub fn create_snapshot(
     _jwt: JWT,
     configure: Json<shell::SnapShotConfig>,
 ) -> (Status, content::RawJson<String>) {
     match shell::create_snapshot(configure.0) {
+        Ok(output) => (Status::Ok, content::RawJson(output)),
+        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string()))
+    }
+}
+
+#[post("/delete-snapshot", format = "application/json", data = "<configure>")]
+pub fn delete_snapshot(
+    _jwt: JWT,
+    configure: Json<shell::SnapShotConfig>,
+) -> (Status, content::RawJson<String>) {
+    match shell::delete_snapshot(configure.0) {
         Ok(output) => (Status::Ok, content::RawJson(output)),
         Err(e) => (Status::InternalServerError, content::RawJson(e.to_string()))
     }
