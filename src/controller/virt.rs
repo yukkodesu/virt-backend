@@ -1,8 +1,14 @@
-use rocket::{http::Status, response::content, serde::json::Json, State};
+use rocket::{
+    data::{Data, ToByteUnit},
+    http::Status,
+    response::content,
+    serde::json::Json,
+    State,
+};
 
 use crate::{
     middleware::authenticate::JWT,
-    virt::{VirtCommand, VirtConnect, shell},
+    virt::{shell, VirtCommand, VirtConnect},
 };
 
 #[get("/hello")]
@@ -30,7 +36,7 @@ pub fn list_snapshot(
     dom_names: Json<Vec<String>>,
 ) -> (Status, content::RawJson<String>) {
     let conn = conn as &VirtConnect;
-    let dom_names = dom_names.0.into_iter().collect();
+    let dom_names: Vec<String> = dom_names.0.into_iter().collect();
     conn.tx
         .send(VirtCommand::create_with_params("ListSnapshot", dom_names))
         .unwrap();
@@ -76,7 +82,7 @@ pub fn create_snapshot(
 ) -> (Status, content::RawJson<String>) {
     match shell::create_snapshot(configure.0) {
         Ok(output) => (Status::Ok, content::RawJson(output)),
-        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string()))
+        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
     }
 }
 
@@ -87,6 +93,14 @@ pub fn delete_snapshot(
 ) -> (Status, content::RawJson<String>) {
     match shell::delete_snapshot(configure.0) {
         Ok(output) => (Status::Ok, content::RawJson(output)),
-        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string()))
+        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
+    }
+}
+
+#[post("/upload-iso", data = "<isofile>")]
+pub async fn upload_iso(isofile: Data<'_>) -> (Status, String) {
+    match isofile.open(8.gigabytes()).into_file("./test.iso").await {
+        Ok(_) => (Status::Ok, "".to_string()),
+        Err(e) => (Status::InsufficientStorage, e.to_string())
     }
 }
