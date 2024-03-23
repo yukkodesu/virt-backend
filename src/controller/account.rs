@@ -52,6 +52,11 @@ pub async fn login_handler(
     let mut token_cookie = Cookie::new("authorization", token.clone());
     token_cookie.set_expires(expire_time);
     cookies.add(token_cookie);
+
+    let mut user_cookie = Cookie::new("user", user_db.username.clone());
+    user_cookie.set_expires(expire_time);
+    cookies.add(user_cookie);
+
     NetworkResponse::Success(token)
 }
 
