@@ -75,7 +75,7 @@ pub fn snapshot_current(conn: &Connect, main_tx: &Sender<String>, params: &Vec<S
         .into_iter()
         .map(|dom_name| {
             if let Ok(dom) = Domain::lookup_by_name(conn, &dom_name) {
-                match DomainSnapshot::current(dom, 0u32) {
+                match DomainSnapshot::current(&dom, 0u32) {
                     Ok(snapshot) => return (dom_name, snapshot.get_name().unwrap()),
                     Err(e) => return (dom_name, "None".to_string()),
                 }

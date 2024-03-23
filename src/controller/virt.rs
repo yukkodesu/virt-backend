@@ -8,7 +8,7 @@ use rocket::{
 
 use crate::{
     middleware::authenticate::JWT,
-    virt::{shell, VirtCommand, VirtConnect},
+    virt::{shell, VirtCommand, VirtCommandType, VirtConnect},
 };
 
 #[get("/hello")]
@@ -19,7 +19,7 @@ pub fn hello(_jwt: JWT) -> String {
 #[get("/list-all")]
 pub fn list_all(_jwt: JWT, conn: &State<VirtConnect>) -> (Status, content::RawJson<String>) {
     let conn = conn as &VirtConnect;
-    conn.tx.send(VirtCommand::create("ListAll")).unwrap();
+    conn.tx.send(VirtCommand::create(VirtCommandType::ListAll)).unwrap();
     if let Ok(res) = conn.rx.lock().unwrap().recv() {
         return (Status::Ok, content::RawJson(res));
     }
@@ -38,7 +38,10 @@ pub fn list_snapshot(
     let conn = conn as &VirtConnect;
     let dom_names: Vec<String> = dom_names.0.into_iter().collect();
     conn.tx
-        .send(VirtCommand::create_with_params("ListSnapshot", dom_names))
+        .send(VirtCommand::create_with_params(
+            VirtCommandType::ListSnapshot,
+            dom_names,
+        ))
         .unwrap();
     if let Ok(res) = conn.rx.lock().unwrap().recv() {
         return (Status::Ok, content::RawJson(res));
@@ -62,7 +65,7 @@ pub fn list_snapshot_tree(
     let conn = conn as &VirtConnect;
     conn.tx
         .send(VirtCommand::create_with_params(
-            "ListSnapshotTree",
+            VirtCommandType::ListSnapshotTree,
             vec![dom_name.0],
         ))
         .unwrap();
@@ -72,6 +75,31 @@ pub fn list_snapshot_tree(
     (
         Status::InternalServerError,
         content::RawJson(String::from("Error listing snapshot tree")),
+    )
+}
+#[post(
+    "/snapshot-current",
+    format = "application/json",
+    data = "<dom_name>"
+)]
+pub fn snapshot_current(
+    _jwt: JWT,
+    conn: &State<VirtConnect>,
+    dom_name: Json<String>,
+) -> (Status, content::RawJson<String>) {
+    let conn = conn as &VirtConnect;
+    conn.tx
+        .send(VirtCommand::create_with_params(
+            VirtCommandType::SnapShotCurrent,
+            vec![dom_name.0],
+        ))
+        .unwrap();
+    if let Ok(res) = conn.rx.lock().unwrap().recv() {
+        return (Status::Ok, content::RawJson(res));
+    }
+    (
+        Status::InternalServerError,
+        content::RawJson(String::from("Error getting snapshot current")),
     )
 }
 
@@ -101,6 +129,6 @@ pub fn delete_snapshot(
 pub async fn upload_iso(isofile: Data<'_>) -> (Status, String) {
     match isofile.open(8.gigabytes()).into_file("./test.iso").await {
         Ok(_) => (Status::Ok, "".to_string()),
-        Err(e) => (Status::InsufficientStorage, e.to_string())
+        Err(e) => (Status::InsufficientStorage, e.to_string()),
     }
 }
