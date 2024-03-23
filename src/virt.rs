@@ -12,26 +12,31 @@ use self::list::*;
 use self::sys::*;
 
 mod list;
-mod sys;
 pub mod shell;
+mod sys;
 
 pub struct VirtCommand {
-    cmd: String,
+    cmd: VirtCommandType,
     params: Vec<String>,
 }
 
+pub enum VirtCommandType {
+    ListAll,
+    ListSnapshot,
+    ListSnapshotTree,
+    SnapShotCurrent,
+    SysInfo,
+}
+
 impl VirtCommand {
-    pub fn create(cmd: &str) -> Self {
+    pub fn create(cmd: VirtCommandType) -> Self {
         VirtCommand {
-            cmd: cmd.to_string(),
+            cmd,
             params: Vec::new(),
         }
     }
-    pub fn create_with_params(cmd: &str, params: Vec<String>) -> Self {
-        VirtCommand {
-            cmd: cmd.to_string(),
-            params,
-        }
+    pub fn create_with_params(cmd: VirtCommandType, params: Vec<String>) -> Self {
+        VirtCommand { cmd, params }
     }
 }
 
@@ -50,11 +55,16 @@ impl VirtConnect {
             let mut sys = System::new();
             loop {
                 if let Ok(VirtCommand { cmd, params }) = virt_rx.recv() {
-                    match cmd.as_str() {
-                        "ListAll" => list_all(&conn, &main_tx),
-                        "ListSnapshot" => list_snapshot(&conn, &main_tx, &params),
-                        "ListSnapshotTree" => list_snapshot_tree(&conn, &main_tx, &params),
-                        "SysInfo" => get_sysinfo(&main_tx, &mut sys),
+                    match cmd {
+                        VirtCommandType::ListAll => list_all(&conn, &main_tx),
+                        VirtCommandType::ListSnapshot => list_snapshot(&conn, &main_tx, &params),
+                        VirtCommandType::ListSnapshotTree => {
+                            list_snapshot_tree(&conn, &main_tx, &params)
+                        }
+                        VirtCommandType::SnapShotCurrent => {
+                            snapshot_current(&conn, &main_tx, &params);
+                        }
+                        VirtCommandType::SysInfo => get_sysinfo(&main_tx, &mut sys),
                         _ => (),
                     }
                 } else {
