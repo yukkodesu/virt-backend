@@ -55,32 +55,17 @@ pub fn list_snapshot(conn: &Connect, main_tx: &Sender<String>, params: &Vec<Stri
                         let description = get_text_by_tagname(&info, "description");
                         let state = get_text_by_tagname(&info, "state");
                         let creation_time = get_text_by_tagname(&info, "creationTime");
+                        let is_current = it.is_current(0u32).unwrap();
                         let mut obj = HashMap::new();
                         obj.insert("name", name);
                         obj.insert("description", description);
                         obj.insert("state", state);
                         obj.insert("creationTime", creation_time);
+                        obj.insert("isCurrent", is_current.to_string());
                         obj
                     })
                     .collect();
                 (dom_name, snapshots)
-            }
-        })
-        .collect();
-    main_tx.send(serde_json::to_string(&t).unwrap()).unwrap();
-}
-
-pub fn snapshot_current(conn: &Connect, main_tx: &Sender<String>, params: &Vec<String>) {
-    let t: HashMap<&String, String> = params
-        .into_iter()
-        .map(|dom_name| {
-            if let Ok(dom) = Domain::lookup_by_name(conn, &dom_name) {
-                match DomainSnapshot::current(&dom, 0u32) {
-                    Ok(snapshot) => return (dom_name, snapshot.get_name().unwrap()),
-                    Err(e) => return (dom_name, "None".to_string()),
-                }
-            } else {
-                (dom_name, "None".to_string())
             }
         })
         .collect();

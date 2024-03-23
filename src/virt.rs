@@ -24,7 +24,6 @@ pub enum VirtCommandType {
     ListAll,
     ListSnapshot,
     ListSnapshotTree,
-    SnapShotCurrent,
     SysInfo,
 }
 
@@ -60,9 +59,6 @@ impl VirtConnect {
                         VirtCommandType::ListSnapshot => list_snapshot(&conn, &main_tx, &params),
                         VirtCommandType::ListSnapshotTree => {
                             list_snapshot_tree(&conn, &main_tx, &params)
-                        }
-                        VirtCommandType::SnapShotCurrent => {
-                            snapshot_current(&conn, &main_tx, &params);
                         }
                         VirtCommandType::SysInfo => get_sysinfo(&main_tx, &mut sys),
                         _ => (),

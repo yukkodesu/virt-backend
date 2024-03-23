@@ -79,28 +79,6 @@ pub fn list_snapshot_tree(
         content::RawJson(String::from("Error listing snapshot tree")),
     )
 }
-#[post("/snapshot-current", format = "application/json", data = "<dom_names>")]
-pub fn snapshot_current(
-    _jwt: JWT,
-    conn: &State<VirtConnect>,
-    dom_names: Json<Vec<String>>,
-) -> (Status, content::RawJson<String>) {
-    let conn = conn as &VirtConnect;
-    let dom_names: Vec<String> = dom_names.0.into_iter().collect();
-    conn.tx
-        .send(VirtCommand::create_with_params(
-            VirtCommandType::SnapShotCurrent,
-            dom_names,
-        ))
-        .unwrap();
-    if let Ok(res) = conn.rx.lock().unwrap().recv() {
-        return (Status::Ok, content::RawJson(res));
-    }
-    (
-        Status::InternalServerError,
-        content::RawJson(String::from("Error getting snapshot current")),
-    )
-}
 
 #[post("/create-snapshot", format = "application/json", data = "<configure>")]
 pub fn create_snapshot(
