@@ -102,6 +102,17 @@ pub fn delete_snapshot(
     }
 }
 
+#[post("/set-current-snapshot", format = "application/json", data = "<configure>")]
+pub fn set_current_snapshot(
+    _jwt: JWT,
+    configure: Json<shell::SnapShotConfig>,
+) -> (Status, content::RawJson<String>) {
+    match shell::set_current_snapshot(configure.0) {
+        Ok(output) => (Status::Ok, content::RawJson(output)),
+        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
+    }
+}
+
 #[post("/upload-iso", data = "<isofile>")]
 pub async fn upload_iso(isofile: Data<'_>) -> (Status, String) {
     match isofile.open(8.gigabytes()).into_file("./test.iso").await {

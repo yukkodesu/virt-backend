@@ -40,6 +40,7 @@ async fn main() -> Result<(), rocket::Error> {
                 list_all,
                 list_snapshot,
                 list_snapshot_tree,
+                set_current_snapshot,
                 get_sysinfo,
                 create_snapshot,
                 delete_snapshot,

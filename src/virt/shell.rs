@@ -62,6 +62,28 @@ pub fn delete_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Err
     }
 }
 
+pub fn set_current_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Error> {
+    let mut cmd = Command::new("virsh");
+    cmd.arg("snapshot-revert")
+        .arg(configure.dom_name)
+        .arg("--snapshotname")
+        .arg(configure.snapshot_name);
+    let status = cmd.status()?;
+    match status.code() {
+        Some(code) => {
+            if code == 0 {
+                Ok("".to_string())
+            } else {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    String::from_utf8(cmd.output()?.stderr).unwrap().trim(),
+                ))
+            }
+        }
+        None => Ok("".to_string()),
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 enum SystemType {
     Linux,
