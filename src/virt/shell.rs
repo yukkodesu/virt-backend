@@ -1,14 +1,7 @@
-use std::{fs::File, process::Command};
-
 use serde::{Deserialize, Serialize};
+use std::process::Command;
 
-#[derive(Serialize, Deserialize)]
-pub struct SnapShotConfig {
-    dom_name: String,
-    snapshot_name: String,
-    description: Option<String>,
-    is_live: Option<String>,
-}
+use super::{CreateVirtConfig, SnapShotConfig, SystemType};
 
 pub fn create_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Error> {
     let mut cmd = Command::new("virsh");
@@ -84,20 +77,6 @@ pub fn set_current_snapshot(configure: SnapShotConfig) -> Result<String, std::io
     }
 }
 
-#[derive(Deserialize, Serialize)]
-enum SystemType {
-    Linux,
-    Windows,
-}
-#[derive(Deserialize, Serialize)]
-pub struct CreateVirtConfig {
-    virt_name: String,
-    memory: String,
-    vcpu: String,
-    system: SystemType,
-    iso_filename: String,
-    disk_size: String,
-}
 
 pub fn create_virt(configure: CreateVirtConfig) -> Result<String, std::io::Error> {
     let mut create_qcow2_cmd = Command::new("qemu-img");

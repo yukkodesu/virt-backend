@@ -1,6 +1,12 @@
-use std::{collections::HashMap, sync::mpsc::Sender, time::{SystemTime, UNIX_EPOCH}};
+use super::VirtResult;
+use std::{
+    collections::HashMap,
+    sync::mpsc::Sender,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use sysinfo::System;
-pub fn get_sysinfo(main_tx: &Sender<String>, sys: &mut System) {
+
+pub fn get_sysinfo(main_tx: &Sender<VirtResult>, sys: &mut System) {
     sys.refresh_cpu();
     sys.refresh_memory();
 
@@ -20,5 +26,7 @@ pub fn get_sysinfo(main_tx: &Sender<String>, sys: &mut System) {
         cpu_usage.insert(i, cpus[i].cpu_usage());
     }
     t.insert("cpu usage", serde_json::to_string(&cpu_usage).unwrap());
-    main_tx.send(serde_json::to_string(&t).unwrap()).unwrap();
+    main_tx
+        .send(VirtResult::Ok(serde_json::to_string(&t).unwrap()))
+        .unwrap();
 }

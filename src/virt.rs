@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::{
     sync::{
         mpsc::{self, Receiver, Sender, SyncSender},
@@ -6,12 +7,13 @@ use std::{
     thread,
 };
 use sysinfo::System;
+use thiserror::Error;
 use virt::connect::Connect;
 
-use self::list::*;
+use self::conn::*;
 use self::sys::*;
 
-mod list;
+mod conn;
 pub mod shell;
 mod sys;
 
@@ -20,11 +22,29 @@ pub struct VirtCommand {
     params: Vec<String>,
 }
 
+#[derive(Error, Debug)]
+pub enum VirtError {
+    #[error("Domain {0} not found")]
+    DomainNotFound(String),
+    #[error("No Snapshot named {dom_name:?} in Domain {snapshot_name:?}")]
+    SnapShotNotFound {
+        dom_name: String,
+        snapshot_name: String,
+    },
+    #[error("Input Invalid")]
+    InvalidInput,
+    #[error("System Internal Error")]
+    VirtInternalError(#[from] virt::error::Error),
+}
+
+pub type VirtResult = Result<String, VirtError>;
+
 pub enum VirtCommandType {
     ListAll,
     ListSnapshot,
     ListSnapshotTree,
     SysInfo,
+    EditSnapShot,
 }
 
 impl VirtCommand {
@@ -41,14 +61,14 @@ impl VirtCommand {
 
 pub struct VirtConnect {
     pub tx: SyncSender<VirtCommand>,
-    pub rx: Mutex<Receiver<String>>,
+    pub rx: Mutex<Receiver<VirtResult>>,
 }
 
 impl VirtConnect {
     pub fn new() -> Self {
         let (virt_tx, virt_rx): (SyncSender<VirtCommand>, Receiver<VirtCommand>) =
             mpsc::sync_channel(2);
-        let (main_tx, main_rx): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (main_tx, main_rx): (Sender<VirtResult>, Receiver<VirtResult>) = mpsc::channel();
         thread::spawn(move || {
             let mut conn = Connect::open("qemu:///session").expect("connection err");
             let mut sys = System::new();
@@ -61,6 +81,7 @@ impl VirtConnect {
                             list_snapshot_tree(&conn, &main_tx, &params)
                         }
                         VirtCommandType::SysInfo => get_sysinfo(&main_tx, &mut sys),
+                        VirtCommandType::EditSnapShot => edit_snapshot(&conn, &main_tx, &params),
                         _ => (),
                     }
                 } else {
@@ -74,4 +95,36 @@ impl VirtConnect {
             rx: Mutex::new(main_rx),
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SnapShotConfig {
+    pub dom_name: String,
+    pub snapshot_name: String,
+    pub description: Option<String>,
+    pub is_live: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SnapShotEditConfig {
+    pub dom_name: String,
+    pub snapshot_name: String,
+    pub new_snapshot_name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+enum SystemType {
+    Linux,
+    Windows,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct CreateVirtConfig {
+    virt_name: String,
+    memory: String,
+    vcpu: String,
+    system: SystemType,
+    iso_filename: String,
+    disk_size: String,
 }
