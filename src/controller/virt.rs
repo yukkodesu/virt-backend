@@ -8,7 +8,7 @@ use rocket::{
 
 use crate::{
     middleware::authenticate::JWT,
-    virt::{shell, SnapShotConfig, SnapShotEditConfig, VirtCommand, VirtCommandType, VirtConnect},
+    virt::{shell, SnapShotConfig, VirtCommand, VirtCommandType, VirtConnect},
 };
 
 #[get("/hello")]
@@ -22,7 +22,7 @@ pub fn list_all(_jwt: JWT, conn: &State<VirtConnect>) -> (Status, content::RawJs
     if let Err(e) = conn.tx.send(VirtCommand::create(VirtCommandType::ListAll)) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread")),
+            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
         );
     }
     match conn.rx.lock().unwrap().recv() {
@@ -48,7 +48,7 @@ pub fn list_snapshot(
     )) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread")),
+            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
         );
     }
     match conn.rx.lock().unwrap().recv() {
@@ -77,7 +77,7 @@ pub fn list_snapshot_tree(
     )) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread")),
+            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
         );
     }
     match conn.rx.lock().unwrap().recv() {
@@ -124,7 +124,7 @@ pub fn edit_snapshot(
     )) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread")),
+            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
         );
     }
     match conn.rx.lock().unwrap().recv() {

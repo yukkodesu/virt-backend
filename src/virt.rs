@@ -83,7 +83,6 @@ impl VirtConnect {
                         }
                         VirtCommandType::SysInfo => get_sysinfo(&main_tx, &mut sys),
                         VirtCommandType::EditSnapShot => edit_snapshot(&conn, &main_tx, &params),
-                        _ => (),
                     }
                 } else {
                     conn.close().unwrap();

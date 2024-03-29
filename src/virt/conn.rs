@@ -2,8 +2,6 @@ use roxmltree::Document;
 use std::env;
 use std::fs::File;
 use std::io::Write;
-use std::os::unix::process::CommandExt;
-use std::path::Path;
 use std::process::Command;
 use std::{collections::HashMap, sync::mpsc::Sender};
 use virt::{connect::Connect, domain::Domain, domain_snapshot::DomainSnapshot};
@@ -61,7 +59,7 @@ pub fn list_snapshot(conn: &Connect, main_tx: &Sender<VirtResult>, params: &Vec<
         .into_iter()
         .try_for_each(|dom_name| -> Result<(), VirtError> {
             match Domain::lookup_by_name(conn, dom_name) {
-                Err(e) => Err(DomainNotFound(dom_name.clone())),
+                Err(_) => Err(DomainNotFound(dom_name.clone())),
                 Ok(dom) => match dom.list_all_snapshots(0) {
                     Err(e) => Err(VirtInternalError(e)),
                     Ok(snapshots) => {
@@ -120,7 +118,7 @@ pub fn list_snapshot_tree(conn: &Connect, main_tx: &Sender<VirtResult>, params: 
                 .send(VirtResult::Ok(serde_json::to_string(&snapshots).unwrap()))
                 .unwrap();
         }
-        Err(e) => main_tx
+        Err(_) => main_tx
             .send(VirtResult::Err(VirtError::DomainNotFound(dom_name.clone())))
             .unwrap(),
     }

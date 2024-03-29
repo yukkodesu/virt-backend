@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::process::Command;
 
-use super::{CreateVirtConfig, SnapShotConfig, SystemType};
+use super::{CreateVirtConfig, SnapShotConfig};
 
 pub fn create_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Error> {
     let mut cmd = Command::new("virsh");
