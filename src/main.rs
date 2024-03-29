@@ -4,6 +4,8 @@ extern crate rocket;
 mod controller;
 mod db;
 mod middleware;
+#[cfg(test)]
+mod test;
 mod virt;
 
 use controller::{account::*, sysinfo::get_sysinfo, virt::*};
@@ -14,8 +16,7 @@ use middleware::cors::CORS;
 use std::env;
 use virt::VirtConnect;
 
-#[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
+async fn build() -> rocket::Rocket<rocket::Build> {
     dotenv().expect(".env file not found");
     let db = match block_on(init(
         &env::var("DATABASE_URL").expect("DATABASE_URL must be set."),
@@ -28,7 +29,7 @@ async fn main() -> Result<(), rocket::Error> {
 
     let virt_conn = VirtConnect::new();
 
-    let _ = rocket::build()
+    rocket::build()
         .manage(db)
         .manage(virt_conn)
         .mount(
@@ -49,8 +50,10 @@ async fn main() -> Result<(), rocket::Error> {
             ],
         )
         .attach(CORS)
-        .launch()
-        .await?;
+}
 
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
+    build().await.launch().await?;
     Ok(())
 }
