@@ -1,9 +1,14 @@
-use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
-use quick_xml::{Reader, Writer};
 use roxmltree::Document;
-use std::io::Cursor;
+use std::env;
+use std::fs::File;
+use std::io::Write;
+use std::os::unix::process::CommandExt;
+use std::path::Path;
+use std::process::Command;
 use std::{collections::HashMap, sync::mpsc::Sender};
 use virt::{connect::Connect, domain::Domain, domain_snapshot::DomainSnapshot};
+
+use super::utils::{edit_xml_text, sha256_hash};
 
 use super::VirtError::{self, *};
 use super::{SnapShotEditConfig, VirtResult};
@@ -121,62 +126,6 @@ pub fn list_snapshot_tree(conn: &Connect, main_tx: &Sender<VirtResult>, params: 
     }
 }
 
-fn edit_xml_text(
-    input: &String,
-    target_element: &str,
-    new_text: &str,
-    defined_depth: i64,
-) -> String {
-    let mut reader = Reader::from_str(&input);
-    reader.trim_text(true);
-    let mut writer = Writer::new_with_indent(Cursor::new(Vec::new()), b' ', 2);
-    let mut in_target_element = false;
-    let mut is_exist = false;
-    let mut depth = 0 as i64;
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(e)) => {
-                depth += 1;
-                if e.name().as_ref() == target_element.as_bytes() {
-                    in_target_element = true;
-                    is_exist = true;
-                }
-                writer.write_event(Event::Start(e.to_owned())).unwrap();
-            }
-            Ok(Event::End(e)) => {
-                if depth == defined_depth && !is_exist {
-                    let elem_start = BytesStart::new(target_element);
-                    writer.write_event(Event::Start(elem_start)).unwrap();
-                    let text = BytesText::new(new_text);
-                    writer.write_event(Event::Text(text)).unwrap();
-                    let elem_end = BytesEnd::new(target_element);
-                    writer.write_event(Event::End(elem_end)).unwrap();
-                }
-                depth -= 1;
-                if e.name().as_ref() == target_element.as_bytes() {
-                    in_target_element = false;
-                }
-                writer.write_event(Event::End(e.to_owned())).unwrap();
-            }
-            Ok(Event::Text(e)) => {
-                if in_target_element && depth == defined_depth + 1 {
-                    writer
-                        .write_event(Event::Text(BytesText::new(new_text)))
-                        .unwrap();
-                } else {
-                    writer.write_event(Event::Text(e.to_owned())).unwrap();
-                }
-            }
-            Ok(Event::Eof) => break,
-            Ok(e) => writer.write_event(e).unwrap(),
-            Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
-        }
-    }
-
-    let result = writer.into_inner().into_inner();
-    String::from_utf8(result).unwrap()
-}
-
 pub fn edit_snapshot(conn: &Connect, main_tx: &Sender<VirtResult>, params: &Vec<String>) {
     match serde_json::from_str::<SnapShotEditConfig>(&params[0]) {
         Ok(config) => {
@@ -188,12 +137,27 @@ pub fn edit_snapshot(conn: &Connect, main_tx: &Sender<VirtResult>, params: &Vec<
                         let mut new_xml =
                             edit_xml_text(&xml_str, "name", &config.new_snapshot_name, 1);
                         if let Some(description) = config.description {
-                            new_xml =
-                                edit_xml_text(&new_xml, "description", &description, 1);
+                            new_xml = edit_xml_text(&new_xml, "description", &description, 1);
                         }
                         // println!("{}", new_xml);
+                        let tmp_dir = env::temp_dir();
+                        let path = tmp_dir.join(sha256_hash(&new_xml) + ".xml");
+                        let mut file = File::create(path.clone()).unwrap();
+                        write!(file, "{}", new_xml).unwrap();
+                        drop(file);
+                        let mut cmd = Command::new("virsh");
+                        cmd.arg("snapshot-create")
+                            .arg(&config.dom_name)
+                            .arg(path.to_str().unwrap())
+                            .arg("--redefine");
+                        let _ = cmd.spawn().unwrap().wait();
+                        let mut cmd = Command::new("virsh");
+                        cmd.arg("snapshot-delete")
+                            .arg(&config.dom_name)
+                            .arg(&config.snapshot_name);
+                        let _ = cmd.spawn().unwrap().wait();
                         main_tx
-                            .send(VirtResult::Ok("Successfully edit snapshot".to_string()))
+                            .send(VirtResult::Ok("Edit snapshot successfully".to_string()))
                             .unwrap();
                     }
                     Err(_) => main_tx

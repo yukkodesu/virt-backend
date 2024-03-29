@@ -16,6 +16,7 @@ use self::sys::*;
 mod conn;
 pub mod shell;
 mod sys;
+mod utils;
 
 pub struct VirtCommand {
     cmd: VirtCommandType,
