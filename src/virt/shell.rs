@@ -144,12 +144,16 @@ pub fn clone_snapshot_as_vm(configure: SnapShotConfig) -> Result<String, std::io
     let now = SystemTime::now();
     let unix_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_millis();
     let temp_snapshot_str = "temp_snapshot_for_clone".to_string() + &unix_timestamp.to_string();
+
+    // create tmp snapshot to store latest change
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-create-as")
         .arg(&configure.dom_name)
         .arg("--name")
         .arg(&temp_snapshot_str);
     let _ = cmd.status()?;
+
+    //revert to old snapshot need to clone
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-revert")
         .arg(&configure.dom_name)
@@ -160,11 +164,15 @@ pub fn clone_snapshot_as_vm(configure: SnapShotConfig) -> Result<String, std::io
         .arg(&configure.dom_name)
         .arg("--auto-clone");
     let _ = cmd.status()?;
+
+    //clone complete, revert to latest tmp snapshot
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-revert")
         .arg(&configure.dom_name)
         .arg(&temp_snapshot_str);
     let _ = cmd.status()?;
+
+    // delete tmp snapshot
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-delete")
         .arg(&configure.dom_name)
