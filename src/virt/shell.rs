@@ -1,4 +1,7 @@
-use std::process::Command;
+use std::{
+    process::Command,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use super::{CreateVirtConfig, SnapShotConfig};
 
@@ -138,12 +141,15 @@ pub fn create_virt(configure: CreateVirtConfig) -> Result<String, std::io::Error
 }
 
 pub fn clone_snapshot_as_vm(configure: SnapShotConfig) -> Result<String, std::io::Error> {
+    let now = SystemTime::now();
+    let unix_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_millis();
+    let temp_snapshot_str = "temp_snapshot_for_clone".to_string() + &unix_timestamp.to_string();
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-create-as")
         .arg(&configure.dom_name)
         .arg("--name")
-        .arg("temp_snapshot_for_clone");
-    let _  = cmd.status()?;
+        .arg(&temp_snapshot_str);
+    let _ = cmd.status()?;
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-revert")
         .arg(&configure.dom_name)
@@ -157,12 +163,12 @@ pub fn clone_snapshot_as_vm(configure: SnapShotConfig) -> Result<String, std::io
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-revert")
         .arg(&configure.dom_name)
-        .arg("temp_snapshot_for_clone");
+        .arg(&temp_snapshot_str);
     let _ = cmd.status()?;
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-delete")
         .arg(&configure.dom_name)
-        .arg("temp_snapshot_for_clone");
+        .arg(&temp_snapshot_str);
     let _ = cmd.status()?;
     Ok("Success".to_string())
 }
