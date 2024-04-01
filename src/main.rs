@@ -43,6 +43,7 @@ async fn build() -> rocket::Rocket<rocket::Build> {
                 list_snapshot_tree,
                 edit_snapshot,
                 set_current_snapshot,
+                clone_snapshot_as_vm,
                 get_sysinfo,
                 create_snapshot,
                 delete_snapshot,

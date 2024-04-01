@@ -76,7 +76,6 @@ pub fn set_current_snapshot(configure: SnapShotConfig) -> Result<String, std::io
     }
 }
 
-
 pub fn create_virt(configure: CreateVirtConfig) -> Result<String, std::io::Error> {
     let mut create_qcow2_cmd = Command::new("qemu-img");
     create_qcow2_cmd
@@ -119,7 +118,9 @@ pub fn create_virt(configure: CreateVirtConfig) -> Result<String, std::io::Error
             "5903", "abc123"
         ))
         .arg("--network")
-        .arg("default");
+        .arg("default")
+        .arg("--wait")
+        .arg("0");
     let status = cmd.status()?;
     match status.code() {
         Some(code) => {
@@ -134,4 +135,34 @@ pub fn create_virt(configure: CreateVirtConfig) -> Result<String, std::io::Error
         }
         None => Ok("".to_string()),
     }
+}
+
+pub fn clone_snapshot_as_vm(configure: SnapShotConfig) -> Result<String, std::io::Error> {
+    let mut cmd = Command::new("virsh");
+    cmd.arg("snapshot-create-as")
+        .arg(&configure.dom_name)
+        .arg("--name")
+        .arg("temp_snapshot_for_clone");
+    let _  = cmd.status()?;
+    let mut cmd = Command::new("virsh");
+    cmd.arg("snapshot-revert")
+        .arg(&configure.dom_name)
+        .arg(&configure.snapshot_name);
+    let _ = cmd.status()?;
+    let mut cmd = Command::new("virt-clone");
+    cmd.arg("--original")
+        .arg(&configure.dom_name)
+        .arg("--auto-clone");
+    let _ = cmd.status()?;
+    let mut cmd = Command::new("virsh");
+    cmd.arg("snapshot-revert")
+        .arg(&configure.dom_name)
+        .arg("temp_snapshot_for_clone");
+    let _ = cmd.status()?;
+    let mut cmd = Command::new("virsh");
+    cmd.arg("snapshot-delete")
+        .arg(&configure.dom_name)
+        .arg("temp_snapshot_for_clone");
+    let _ = cmd.status()?;
+    Ok("Success".to_string())
 }
