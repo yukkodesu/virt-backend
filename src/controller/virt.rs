@@ -119,7 +119,7 @@ pub fn edit_snapshot(
 ) -> (Status, content::RawJson<String>) {
     let conn = conn as &VirtConnect;
     if let Err(e) = conn.tx.send(VirtCommand::create_with_params(
-        VirtCommandType::EditSnapShot,
+        VirtCommandType::EditSnapshot,
         vec![configure],
     )) {
         return (
@@ -132,6 +132,17 @@ pub fn edit_snapshot(
             Ok(res) => (Status::Ok, content::RawJson(res)),
             Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
         },
+        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
+    }
+}
+
+#[post("/clone-snapshot-as-vm", format = "application/json", data = "<configure>")]
+pub fn clone_snapshot_as_vm(
+    _jwt: JWT,
+    configure: Json<SnapShotConfig>,
+) -> (Status, content::RawJson<String>) {
+    match shell::clone_snapshot_as_vm(configure.0) {
+        Ok(output) => (Status::Ok, content::RawJson(output)),
         Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
     }
 }

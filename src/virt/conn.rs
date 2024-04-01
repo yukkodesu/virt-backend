@@ -132,11 +132,8 @@ pub fn edit_snapshot(conn: &Connect, main_tx: &Sender<VirtResult>, params: &Vec<
                 Ok(dom) => match DomainSnapshot::lookup_by_name(&dom, &config.snapshot_name, 0) {
                     Ok(snapshot) => {
                         let xml_str = snapshot.get_xml_desc(0).unwrap();
-                        let mut new_xml =
-                            edit_xml_text(&xml_str, "name", &config.new_snapshot_name, 1);
-                        if let Some(description) = config.description {
-                            new_xml = edit_xml_text(&new_xml, "description", &description, 1);
-                        }
+                        let mut new_xml = xml_str;
+                        new_xml = edit_xml_text(&new_xml, "description", &config.description, 1);
                         // println!("{}", new_xml);
                         let tmp_dir = env::temp_dir();
                         let path = tmp_dir.join(sha256_hash(&new_xml) + ".xml");
@@ -148,11 +145,6 @@ pub fn edit_snapshot(conn: &Connect, main_tx: &Sender<VirtResult>, params: &Vec<
                             .arg(&config.dom_name)
                             .arg(path.to_str().unwrap())
                             .arg("--redefine");
-                        let _ = cmd.spawn().unwrap().wait();
-                        let mut cmd = Command::new("virsh");
-                        cmd.arg("snapshot-delete")
-                            .arg(&config.dom_name)
-                            .arg(&config.snapshot_name);
                         let _ = cmd.spawn().unwrap().wait();
                         main_tx
                             .send(VirtResult::Ok("Edit snapshot successfully".to_string()))

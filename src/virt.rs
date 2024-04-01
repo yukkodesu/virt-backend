@@ -45,7 +45,7 @@ pub enum VirtCommandType {
     ListSnapshot,
     ListSnapshotTree,
     SysInfo,
-    EditSnapShot,
+    EditSnapshot,
 }
 
 impl VirtCommand {
@@ -82,7 +82,7 @@ impl VirtConnect {
                             list_snapshot_tree(&conn, &main_tx, &params)
                         }
                         VirtCommandType::SysInfo => get_sysinfo(&main_tx, &mut sys),
-                        VirtCommandType::EditSnapShot => edit_snapshot(&conn, &main_tx, &params),
+                        VirtCommandType::EditSnapshot => edit_snapshot(&conn, &main_tx, &params),
                     }
                 } else {
                     conn.close().unwrap();
@@ -109,8 +109,7 @@ pub struct SnapShotConfig {
 pub struct SnapShotEditConfig {
     pub dom_name: String,
     pub snapshot_name: String,
-    pub new_snapshot_name: String,
-    pub description: Option<String>,
+    pub description: String,
 }
 
 #[derive(Deserialize, Serialize)]
