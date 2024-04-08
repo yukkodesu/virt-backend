@@ -4,9 +4,9 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
+use rocket::time::{Duration, OffsetDateTime};
 use rocket::State;
-use rocket::time::{OffsetDateTime, Duration};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, ActiveValue};
+use sea_orm::{ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UserJson {
@@ -30,7 +30,7 @@ pub enum NetworkResponse {
 pub async fn login_handler(
     req_user: Json<UserJson>,
     db: &State<DatabaseConnection>,
-    cookies: &CookieJar<'_>
+    cookies: &CookieJar<'_>,
 ) -> NetworkResponse {
     let db = db as &DatabaseConnection;
     let user_db = match User::find()
@@ -60,7 +60,6 @@ pub async fn login_handler(
     NetworkResponse::Success(token)
 }
 
-
 #[post("/regist", format = "application/json", data = "<req_user>")]
 pub async fn regist_handler(
     req_user: Json<UserJson>,
@@ -77,11 +76,14 @@ pub async fn regist_handler(
     }
 
     let hashed = hash(&req_user.password, DEFAULT_COST).expect("Password verify error");
-    if let Err(err) = User::insert(user::ActiveModel{
+    if let Err(err) = User::insert(user::ActiveModel {
         username: ActiveValue::set(req_user.username.clone()),
         password: ActiveValue::Set(hashed),
         ..Default::default()
-    }).exec(db).await {
+    })
+    .exec(db)
+    .await
+    {
         return NetworkResponse::InternalError(err.to_string());
     }
     NetworkResponse::Success(String::from(""))
