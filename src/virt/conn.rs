@@ -17,12 +17,13 @@ pub fn list_all(conn: &Connect, main_tx: &Sender<VirtResult>) {
             let t: Vec<HashMap<&str, String>> = doms
                 .into_iter()
                 .map(|dom| {
-                    let mut obj = HashMap::new();
-                    obj.insert("name", dom.get_name().expect("Domain must have name!"));
+                    let mut map = HashMap::new();
+                    map.insert("name", dom.get_name().expect("Domain must have name!"));
                     let dom_info = dom.get_info().expect("Domain must have Info!");
-                    obj.insert("vcpu", dom_info.nr_virt_cpu.to_string());
-                    obj.insert("memory", dom_info.memory.to_string());
-                    obj
+                    map.insert("vcpu", dom_info.nr_virt_cpu.to_string());
+                    map.insert("memory", dom_info.memory.to_string());
+                    map.insert("state", dom_info.state.to_string());
+                    map
                 })
                 .collect();
             main_tx
