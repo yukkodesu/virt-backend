@@ -112,6 +112,12 @@ pub struct SnapShotEditConfig {
     pub description: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AltDomStateCommand {
+    pub dom_name: String,
+    pub state: String,
+}
+
 #[derive(Deserialize, Serialize)]
 enum SystemType {
     Linux,

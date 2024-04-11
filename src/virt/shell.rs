@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use super::{CreateVirtConfig, SnapShotConfig};
+use super::{AltDomStateCommand, CreateVirtConfig, SnapShotConfig};
 
 pub fn create_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Error> {
     let mut cmd = Command::new("virsh");
@@ -179,4 +179,44 @@ pub fn clone_snapshot_as_vm(configure: SnapShotConfig) -> Result<String, std::io
         .arg(&temp_snapshot_str);
     let _ = cmd.status()?;
     Ok("Success".to_string())
+}
+
+pub fn alt_vm_state(config: AltDomStateCommand) -> Result<String, std::io::Error> {
+    let mut cmd = Command::new("virsh");
+    match config.state.as_str() {
+        "start" => {
+            cmd.arg("start");
+        }
+        "shutdown" => {
+            cmd.arg("shutdown");
+        }
+        "suspend" => {
+            cmd.arg("suspend");
+        }
+        "destroy" => {
+            cmd.arg("destroy");
+        }
+        "undefine" => {
+            cmd.arg("undefine");
+        }
+        _ => (),
+    };
+    cmd.arg(&config.dom_name);
+    let status = cmd.status()?;
+    match status.code() {
+        Some(code) => {
+            if code == 0 {
+                Ok("Success".to_string())
+            } else {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    String::from_utf8(cmd.output()?.stderr).unwrap().trim(),
+                ))
+            }
+        }
+        None => Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "No status code".to_string(),
+        )),
+    }
 }

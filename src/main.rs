@@ -47,7 +47,8 @@ async fn build() -> rocket::Rocket<rocket::Build> {
                 get_sysinfo,
                 create_snapshot,
                 delete_snapshot,
-                upload_iso
+                upload_iso,
+                alt_vm_state,
             ],
         )
         .attach(CORS)

@@ -8,7 +8,7 @@ use rocket::{
 
 use crate::{
     middleware::authenticate::JWT,
-    virt::{shell, SnapShotConfig, VirtCommand, VirtCommandType, VirtConnect},
+    virt::{shell, AltDomStateCommand, SnapShotConfig, VirtCommand, VirtCommandType, VirtConnect},
 };
 
 #[get("/hello")]
@@ -22,7 +22,9 @@ pub fn list_all(_jwt: JWT, conn: &State<VirtConnect>) -> (Status, content::RawJs
     if let Err(e) = conn.tx.send(VirtCommand::create(VirtCommandType::ListAll)) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
+            content::RawJson(
+                String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string(),
+            ),
         );
     }
     match conn.rx.lock().unwrap().recv() {
@@ -48,7 +50,9 @@ pub fn list_snapshot(
     )) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
+            content::RawJson(
+                String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string(),
+            ),
         );
     }
     match conn.rx.lock().unwrap().recv() {
@@ -77,7 +81,9 @@ pub fn list_snapshot_tree(
     )) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
+            content::RawJson(
+                String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string(),
+            ),
         );
     }
     match conn.rx.lock().unwrap().recv() {
@@ -124,7 +130,9 @@ pub fn edit_snapshot(
     )) {
         return (
             Status::InternalServerError,
-            content::RawJson(String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string()),
+            content::RawJson(
+                String::from("Error sending VirtCommand to LibVirt Thread:") + &e.to_string(),
+            ),
         );
     }
     match conn.rx.lock().unwrap().recv() {
@@ -136,7 +144,11 @@ pub fn edit_snapshot(
     }
 }
 
-#[post("/clone-snapshot-as-vm", format = "application/json", data = "<configure>")]
+#[post(
+    "/clone-snapshot-as-vm",
+    format = "application/json",
+    data = "<configure>"
+)]
 pub fn clone_snapshot_as_vm(
     _jwt: JWT,
     configure: Json<SnapShotConfig>,
@@ -167,5 +179,16 @@ pub async fn upload_iso(isofile: Data<'_>) -> (Status, String) {
     match isofile.open(8.gigabytes()).into_file("./test.iso").await {
         Ok(_) => (Status::Ok, "".to_string()),
         Err(e) => (Status::InsufficientStorage, e.to_string()),
+    }
+}
+
+#[post("/alt-vm-state", data = "<config>")]
+pub async fn alt_vm_state(
+    _jwt: JWT,
+    config: Json<AltDomStateCommand>,
+) -> (Status, content::RawJson<String>) {
+    match shell::alt_vm_state(config.0) {
+        Ok(output) => (Status::Ok, content::RawJson(output)),
+        Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
     }
 }
