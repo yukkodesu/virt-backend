@@ -8,7 +8,10 @@ use rocket::{
 
 use crate::{
     middleware::authenticate::JWT,
-    virt::{shell, AltDomStateCommand, SnapShotConfig, VirtCommand, VirtCommandType, VirtConnect},
+    virt::{
+        shell, AltDomStateCommand, SnapShotConfig, VirtCommand, VirtCommandType,
+        VirtConnect,
+    },
 };
 
 #[get("/hello")]

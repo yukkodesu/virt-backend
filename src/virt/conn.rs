@@ -128,7 +128,6 @@ pub fn list_snapshot_tree(conn: &Connect, main_tx: &Sender<VirtResult>, params: 
 pub fn edit_snapshot(conn: &Connect, main_tx: &Sender<VirtResult>, params: &Vec<String>) {
     match serde_json::from_str::<SnapShotEditConfig>(&params[0]) {
         Ok(config) => {
-            println!("{:?}", config);
             match Domain::lookup_by_name(conn, &config.dom_name) {
                 Ok(dom) => match DomainSnapshot::lookup_by_name(&dom, &config.snapshot_name, 0) {
                     Ok(snapshot) => {

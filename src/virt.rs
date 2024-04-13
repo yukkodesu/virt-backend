@@ -36,6 +36,8 @@ pub enum VirtError {
     InvalidInput,
     #[error("System Internal Error")]
     VirtInternalError(#[from] virt::error::Error),
+    #[error("Error: {0}")]
+    OtherError(String),
 }
 
 pub type VirtResult = Result<String, VirtError>;
@@ -102,6 +104,7 @@ pub struct SnapShotConfig {
     pub dom_name: String,
     pub snapshot_name: String,
     pub description: Option<String>,
+    pub parent: Option<String>,
     pub is_live: Option<String>,
 }
 
