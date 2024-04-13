@@ -9,21 +9,26 @@ pub fn create_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Err
     let now = SystemTime::now();
     let unix_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_millis();
     let temp_snapshot_str = "temp_snapshot".to_string() + &unix_timestamp.to_string();
+    let mut is_temp_create = false;
+    // create tmp snapshot to save current change, so that we can revert to parent which user defined
     if let Some(parent) = &configure.parent {
-        // create tmp snapshot to store latest change
-        let mut cmd = Command::new("virsh");
-        cmd.arg("snapshot-create-as")
-            .arg(&configure.dom_name)
-            .arg("--name")
-            .arg(&temp_snapshot_str);
-        let _ = cmd.status()?;
+        if parent.to_ascii_lowercase().as_str() != "current" {
+            // create tmp snapshot to store latest change
+            let mut cmd = Command::new("virsh");
+            cmd.arg("snapshot-create-as")
+                .arg(&configure.dom_name)
+                .arg("--name")
+                .arg(&temp_snapshot_str);
+            let _ = cmd.status()?;
 
-        // revert to parent
-        let mut cmd = Command::new("virsh");
-        cmd.arg("snapshot-revert")
-            .arg(&configure.dom_name)
-            .arg(&parent);
-        let _ = cmd.status()?;
+            // revert to parent
+            let mut cmd = Command::new("virsh");
+            cmd.arg("snapshot-revert")
+                .arg(&configure.dom_name)
+                .arg(&parent);
+            let _ = cmd.status()?;
+            is_temp_create = true;
+        }
     }
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-create-as")
@@ -57,19 +62,21 @@ pub fn create_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Err
             ))
         }
     };
-    //create complete, revert to latest tmp snapshot
-    let mut cmd = Command::new("virsh");
-    cmd.arg("snapshot-revert")
-        .arg(&configure.dom_name)
-        .arg(&temp_snapshot_str);
-    let _ = cmd.status()?;
+    if is_temp_create {
+        //create complete, revert to latest tmp snapshot
+        let mut cmd = Command::new("virsh");
+        cmd.arg("snapshot-revert")
+            .arg(&configure.dom_name)
+            .arg(&temp_snapshot_str);
+        let _ = cmd.status()?;
 
-    // delete tmp snapshot
-    let mut cmd = Command::new("virsh");
-    cmd.arg("snapshot-delete")
-        .arg(&configure.dom_name)
-        .arg(&temp_snapshot_str);
-    let _ = cmd.status()?;
+        // delete tmp snapshot
+        let mut cmd = Command::new("virsh");
+        cmd.arg("snapshot-delete")
+            .arg(&configure.dom_name)
+            .arg(&temp_snapshot_str);
+        let _ = cmd.status()?;
+    }
     Ok("Success".to_string())
 }
 
