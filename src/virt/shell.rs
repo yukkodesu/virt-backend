@@ -24,7 +24,6 @@ pub fn create_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Err
             .arg(&configure.dom_name)
             .arg(&parent);
         let _ = cmd.status()?;
-
     }
     let mut cmd = Command::new("virsh");
     cmd.arg("snapshot-create-as")
@@ -39,22 +38,24 @@ pub fn create_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Err
             cmd.arg("--live");
         }
     }
-    let status = cmd.status()?;
-    match status.code() {
+    let output = cmd.output()?;
+    match output.status.code() {
         Some(code) => {
             if code == 0 {
                 ()
             } else {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    String::from_utf8(cmd.output()?.stderr).unwrap().trim(),
-                ))
+                    String::from_utf8(output.stderr).unwrap().trim(),
+                ));
             }
         }
-        None => return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "No status code".to_string(),
-        )),
+        None => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "No status code".to_string(),
+            ))
+        }
     };
     //create complete, revert to latest tmp snapshot
     let mut cmd = Command::new("virsh");
@@ -78,15 +79,15 @@ pub fn delete_snapshot(configure: SnapShotConfig) -> Result<String, std::io::Err
         .arg(configure.dom_name)
         .arg("--snapshotname")
         .arg(configure.snapshot_name);
-    let status = cmd.status()?;
-    match status.code() {
+    let output = cmd.output()?;
+    match output.status.code() {
         Some(code) => {
             if code == 0 {
                 Ok("".to_string())
             } else {
                 Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    String::from_utf8(cmd.output()?.stderr).unwrap().trim(),
+                    String::from_utf8(output.stderr).unwrap().trim(),
                 ))
             }
         }
@@ -100,15 +101,15 @@ pub fn set_current_snapshot(configure: SnapShotConfig) -> Result<String, std::io
         .arg(configure.dom_name)
         .arg("--snapshotname")
         .arg(configure.snapshot_name);
-    let status = cmd.status()?;
-    match status.code() {
+    let output = cmd.output()?;
+    match output.status.code() {
         Some(code) => {
             if code == 0 {
                 Ok("".to_string())
             } else {
                 Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    String::from_utf8(cmd.output()?.stderr).unwrap().trim(),
+                    String::from_utf8(output.stderr).unwrap().trim(),
                 ))
             }
         }
@@ -128,17 +129,15 @@ pub fn create_virt(configure: CreateVirtConfig) -> Result<String, std::io::Error
         .arg("disk.qcow2")
         .arg(configure.disk_size)
         .current_dir("/data_disk/create_test");
-    let status = create_qcow2_cmd.status()?;
-    match status.code() {
+    let output = create_qcow2_cmd.output()?;
+    match output.status.code() {
         Some(code) => {
             if code == 0 {
                 ()
             } else {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    String::from_utf8(create_qcow2_cmd.output()?.stderr)
-                        .unwrap()
-                        .trim(),
+                    String::from_utf8(output.stderr).unwrap().trim(),
                 ));
             }
         }
@@ -164,21 +163,21 @@ pub fn create_virt(configure: CreateVirtConfig) -> Result<String, std::io::Error
         .arg("default")
         .arg("--wait")
         .arg("0");
-    let status = cmd.status()?;
-    match status.code() {
+    let output = cmd.output()?;
+    match output.status.code() {
         Some(code) => {
             if code == 0 {
                 Ok("".to_string())
             } else {
                 Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    String::from_utf8(cmd.output()?.stderr).unwrap().trim(),
+                    String::from_utf8(output.stderr).unwrap().trim(),
                 ))
             }
         }
-        None =>  Err(std::io::Error::new(
+        None => Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
-            "No status code".to_string(),
+            "No output code".to_string(),
         )),
     }
 }
@@ -245,15 +244,15 @@ pub fn alt_vm_state(config: AltDomStateCommand) -> Result<String, std::io::Error
         _ => (),
     };
     cmd.arg(&config.dom_name);
-    let status = cmd.status()?;
-    match status.code() {
+    let output = cmd.output()?;
+    match output.status.code() {
         Some(code) => {
             if code == 0 {
                 Ok("Success".to_string())
             } else {
                 Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    String::from_utf8(cmd.output()?.stderr).unwrap().trim(),
+                    String::from_utf8(output.stderr).unwrap().trim(),
                 ))
             }
         }
