@@ -1,6 +1,6 @@
 use crate::middleware::authenticate::JWT;
 use futures::{SinkExt, StreamExt};
-use rocket_ws::{Channel, Message, WebSocket};
+use rocket_ws::{Channel, WebSocket};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
