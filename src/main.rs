@@ -8,7 +8,7 @@ mod middleware;
 mod test;
 mod virt;
 
-use controller::{account::*, sysinfo::get_sysinfo, virt::*, ws::vnc_connect};
+use controller::{account::*, sysinfo::get_sysinfo, virt::*, vnc::*};
 use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
@@ -49,7 +49,8 @@ async fn build() -> rocket::Rocket<rocket::Build> {
                 delete_snapshot,
                 upload_iso,
                 alt_vm_state,
-                vnc_connect
+                vnc_connect,
+                get_vnc_display_config
             ],
         )
         .attach(CORS)
