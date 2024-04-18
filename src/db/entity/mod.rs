@@ -3,4 +3,5 @@
 pub mod prelude;
 
 pub mod domains;
+pub mod schedule_jobs;
 pub mod user;
