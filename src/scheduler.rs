@@ -29,7 +29,7 @@ impl SchedConnect {
     pub async fn new() -> Self {
         let (sched_tx, mut sched_rx): (Sender<SchedCommand>, Receiver<SchedCommand>) =
             mpsc::channel(2);
-        let (result_tx, mut result_rx): (Sender<SchedResult>, Receiver<SchedResult>) =
+        let (result_tx, result_rx): (Sender<SchedResult>, Receiver<SchedResult>) =
             mpsc::channel(2);
         tokio::spawn(async move {
             let scheduler = JobScheduler::new().await.unwrap();
