@@ -78,7 +78,7 @@ pub async fn regist_handler(
     let hashed = hash(&req_user.password, DEFAULT_COST).expect("Password verify error");
     if let Err(err) = User::insert(user::ActiveModel {
         username: ActiveValue::set(req_user.username.clone()),
-        password: ActiveValue::Set(hashed),
+        password: ActiveValue::set(hashed),
         ..Default::default()
     })
     .exec(db)
