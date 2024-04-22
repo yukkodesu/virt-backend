@@ -5,16 +5,16 @@ mod controller;
 mod db;
 mod middleware;
 mod scheduler;
-mod virt;
 #[cfg(test)]
 mod test;
+mod virt;
 
 use controller::{account::*, sysinfo::get_sysinfo, virt::*, vnc::*};
 use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
 use middleware::cors::CORS;
-use scheduler::Scheduler;
+use scheduler::SchedConnect;
 use std::env;
 use virt::VirtConnect;
 
@@ -29,21 +29,17 @@ async fn build() -> rocket::Rocket<rocket::Build> {
 
     let virt_conn = VirtConnect::new();
 
-    let scheduler = match Scheduler::new().await {
-        Ok(v) => v,
-        Err(e) => panic!("{}", e),
-    };
+    let sched_conn = SchedConnect::new().await;
 
     rocket::build()
         .manage(db)
         .manage(virt_conn)
-        .manage(scheduler)
+        .manage(sched_conn)
         .mount(
             "/api",
             routes![
                 login_handler,
                 regist_handler,
-                hello,
                 list_all,
                 list_snapshot,
                 list_snapshot_tree,
@@ -56,7 +52,8 @@ async fn build() -> rocket::Rocket<rocket::Build> {
                 upload_iso,
                 alt_vm_state,
                 vnc_connect,
-                get_vnc_display_config
+                get_vnc_display_config,
+                sched_task
             ],
         )
         .attach(CORS)

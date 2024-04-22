@@ -5,19 +5,14 @@ use rocket::{
     serde::json::Json,
     State,
 };
+use sea_orm::{ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter};
 
 use crate::{
+    db::entity::{prelude::*, *},
     middleware::authenticate::JWT,
-    virt::{
-        shell, AltDomStateCommand, SnapShotConfig, VirtCommand, VirtCommandType,
-        VirtConnect,
-    },
+    scheduler::{SchedCommand, SchedConnect},
+    virt::{shell, AltDomStateCommand, SnapShotConfig, VirtCommand, VirtCommandType, VirtConnect},
 };
-
-#[get("/hello")]
-pub fn hello(_jwt: JWT) -> String {
-    String::from("hello")
-}
 
 #[get("/list-all")]
 pub fn list_all(_jwt: JWT, conn: &State<VirtConnect>) -> (Status, content::RawJson<String>) {
@@ -193,5 +188,59 @@ pub async fn alt_vm_state(
     match shell::alt_vm_state(config.0) {
         Ok(output) => (Status::Ok, content::RawJson(output)),
         Err(e) => (Status::InternalServerError, content::RawJson(e.to_string())),
+    }
+}
+
+#[post("/sched-task", data = "<command>")]
+pub async fn sched_task(
+    _jwt: JWT,
+    db: &State<DatabaseConnection>,
+    sched: &State<SchedConnect>,
+    command: Json<SchedCommand>,
+) -> (Status, String) {
+    let command = command.0;
+    let sched = sched as &SchedConnect;
+    let db = db as &DatabaseConnection;
+    sched.tx.send(command.clone()).await.unwrap();
+    match command {
+        SchedCommand::Add(config) => {
+            let result = sched.rx.lock().await.recv().await.unwrap();
+            match result {
+                Ok(uuid) => {
+                    if let Err(e) = ScheduleJobs::insert(schedule_jobs::ActiveModel {
+                        cron: ActiveValue::set(config.cron),
+                        domain: ActiveValue::set(config.dom_name),
+                        uuid: ActiveValue::set(uuid),
+                        ..Default::default()
+                    })
+                    .exec(db)
+                    .await
+                    {
+                        return (Status::InternalServerError, e.to_string());
+                    }
+                    (Status::Ok, "schedule job set successfully!".to_string())
+                }
+                Err(e) => (Status::InternalServerError, e.to_string()),
+            }
+        }
+        SchedCommand::Delete(uuid) => {
+            match ScheduleJobs::find()
+                .filter(schedule_jobs::Column::Uuid.eq(uuid.clone()))
+                .one(db)
+                .await
+            {
+                Ok(Some(v)) => {
+                    v.delete(db).await.unwrap();
+                    (
+                        Status::Ok,
+                        "delete schedule job set successfully!".to_string(),
+                    )
+                }
+                _ => (
+                    Status::InternalServerError,
+                    format!("can not find job id {}", &uuid).to_string(),
+                ),
+            }
+        }
     }
 }
