@@ -13,7 +13,7 @@ use tokio::{
     net::TcpStream,
 };
 
-#[get("/ws/<port>")]
+#[get("/ws-stream/<port>")]
 pub async fn vnc_connect(_jwt: JWT, port: &str, ws: WebSocket) -> Channel<'_> {
     let mut socket_stream = TcpStream::connect(format!("127.0.0.1:{}", port))
         .await
@@ -55,7 +55,7 @@ struct VncDisplayConfig {
     password: String,
 }
 
-#[post("/get-vnc-display-config", format = "application/json", data = "<dom_name>")]
+#[post("/display-config", format = "application/json", data = "<dom_name>")]
 pub async fn get_vnc_display_config(
     _jwt: JWT,
     db: &State<DatabaseConnection>,

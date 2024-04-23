@@ -4,8 +4,8 @@ use crate::{
 };
 use rocket::{http::Status, response::content, State};
 
-#[get("/sysinfo")]
-pub fn get_sysinfo(_jwt: JWT, conn: &State<VirtConnect>) -> (Status, content::RawJson<String>) {
+#[get("/utilization/get")]
+pub fn get_sys_utilization(_jwt: JWT, conn: &State<VirtConnect>) -> (Status, content::RawJson<String>) {
     let conn = conn as &VirtConnect;
     conn.tx
         .send(VirtCommand::create(VirtCommandType::SysInfo))

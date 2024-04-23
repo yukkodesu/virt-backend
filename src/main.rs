@@ -9,11 +9,10 @@ mod scheduler;
 mod test;
 mod virt;
 
-use controller::{account::*, sysinfo::get_sysinfo, virt::*, vnc::*};
+use controller::{account::*, snapshot::*, sys::get_sys_utilization, virt::*, vnc::*};
 use db::init;
 use dotenvy::dotenv;
 use futures::executor::block_on;
-use middleware::cors::CORS;
 use scheduler::SchedConnect;
 use std::env;
 use virt::VirtConnect;
@@ -35,28 +34,28 @@ async fn build() -> rocket::Rocket<rocket::Build> {
         .manage(db)
         .manage(virt_conn)
         .manage(sched_conn)
+        .mount("/api/v1/account", routes![login_handler, regist_handler])
+        .mount("/api/v1/sys", routes![get_sys_utilization])
         .mount(
-            "/api",
+            "/api/v1/virt",
+            routes![list_domains, set_domain_state, upload_iso],
+        )
+        .mount(
+            "/api/v1/snapshot",
             routes![
-                login_handler,
-                regist_handler,
-                list_all,
                 list_snapshot,
                 list_snapshot_tree,
                 edit_snapshot,
                 set_current_snapshot,
                 clone_snapshot_as_vm,
-                get_sysinfo,
                 create_snapshot,
                 delete_snapshot,
-                upload_iso,
-                alt_vm_state,
-                vnc_connect,
-                get_vnc_display_config,
-                sched_task
+                add_sched_task,
+                delete_sched_task,
             ],
         )
-        .attach(CORS)
+        .mount("/api/v1/vnc", routes![vnc_connect, get_vnc_display_config])
+    // .attach(CORS)
 }
 
 #[rocket::main]
