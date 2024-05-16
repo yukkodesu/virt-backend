@@ -248,6 +248,9 @@ pub fn alt_vm_state(config: AltDomStateCommand) -> Result<String, std::io::Error
         "undefine" => {
             cmd.arg("undefine");
         }
+        "resume" => {
+            cmd.arg("resume");
+        }
         _ => (),
     };
     cmd.arg(&config.dom_name);
